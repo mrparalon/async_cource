@@ -1,0 +1,103 @@
+[tool.poetry]
+name = "async-systems"
+version = "0.1.0"
+description = ""
+authors = ["mrparalon <mr.paralon@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.100.0"
+aiokafka = "^0.8.1"
+alembic = "^1.11.1"
+orjson = "^3.9.2"
+psycopg2 = "^2.9.6"
+sqlalchemy = "^2.0.19"
+httpx = "^0.24.1"
+sentry-sdk = "^1.28.1"
+uvicorn = {version = "^0.23.1", extras = ["standard"]}
+pydantic-settings = "^2.0.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+target_version = ["py311"]
+line-length = 120
+
+
+[tool.flake8]
+ignore = [
+    "A003",
+    "B008",
+    "ANN101",
+    "ANN002",
+    "ANN003",
+    "ANN102",
+    "W503",
+    "VNE003",
+    "U100",
+    "N805",
+    "VNE002",
+    "R501",
+]
+max-complexity = 10
+max-line-length = 120
+format = "%(path)s:%(row)d Column:%(col)d: %(code)s %(text)s"
+
+[tool.ruff]
+line-length = 120
+select = [
+    "F",        # pyflakes
+    "E",        # pycodestyle errors
+    "W",        # pycodestyle warnings
+    "C90",      # mccabe
+    "I",        # isort
+    "N",        # pep8-naming
+    "UP",       # pyupgrade
+    "YTT",      # flake8-2020
+    "S",        # flake8-bandit
+    "BLE",      # flake8-blind-except
+    "FBT003",   # flake8-boolean-trap
+    "B",        # flake8-bugbear
+    "A",        # flake8-builtins
+    "C4",       # flake8-comprehensions
+    "T10",      # flake8-debugger
+    "ISC",      # flake8-implicit-str-concat
+    "G010",     # Logging statement uses warn instead of warning
+    "G201",     # Logging .exception(...) should be used instead of .error(..., exc_info=True)
+    "G202",     # Logging statement has redundant exc_info
+    "INP",      # flake8-no-pep420
+    "PIE",      # flake8-pie
+    "T20",      # flake8-print
+    "PYI",      # flake8-pyi
+    "PT",       # flake8-pytest-style
+    "Q",        # flake8-quotes
+    "RSE",      # flake8-raise
+    "RET",      # flake8-return
+    "SIM",      # flake8-simplify
+    "TCH",      # flake8-type-checking
+    "ARG",      # flake8-unused-arguments
+    "PTH",      # flake8-use-pathlib
+    "ERA",      # flake8-eradicate
+    "PGH",      # pygrep-hooks
+    "PLC0414",  # Import alias does not rename original package
+    "PLE",      # Error
+    "PLW",      # Warning
+    "RUF",      # ruff-specific rules
+    "ANN001",   # missing type annotation for arguments
+]
+unfixable = [
+    "ERA001",   # eradicate: found commented out code (can be dangerous if fixed automatically)
+]
+ignore = [
+    "B008",     # Do not perform function call `Depends` in argument defaults
+    "A003",     # builtin shadowing in attributes
+    "RET501",   # Do not explicitly `return None` in function if it is the only possible return value
+    "RUF100",   # enable later, conflicting with flake8 now
+    "S101",     # Use of `assert` detected
+    "S311",     # Standard pseudo-random generators are not suitable for cryptographic purposes
+]
+extend-exclude = ["alembic", "gunicorn"]
