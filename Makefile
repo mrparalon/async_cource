@@ -23,4 +23,7 @@ format:
 	black .;
 
 test:
-	pytest
+	pytest -s tests/services/
+
+test_e2e:
+	pytest -s tests/e2e/
