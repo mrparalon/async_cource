@@ -17,6 +17,7 @@ httpx = "^0.24.1"
 sentry-sdk = "^1.28.1"
 uvicorn = {version = "^0.23.1", extras = ["standard"]}
 pydantic-settings = "^2.0.2"
+loguru = "^0.7.0"
 
 
 [build-system]

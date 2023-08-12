@@ -1,6 +1,5 @@
-import logging
-
 from aiokafka import AIOKafkaConsumer
+from loguru import logger
 
 
 async def tasks_auth_worker():
@@ -14,11 +13,11 @@ async def tasks_auth_worker():
     )
     # Get cluster layout and join group `my-group`
     await consumer.start()
-    logging.info("consumer started")
+    logger.info("consumer started")
     try:
         # Consume messages
         async for msg in consumer:
-            logging.info(
+            logger.info(
                 f"consumed: {msg.topic=}, {msg.partition=}, {msg.offset=} {msg.key=}, {msg.value=}, {msg.timestamp=}",
             )
     finally:
