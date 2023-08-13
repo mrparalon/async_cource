@@ -6,7 +6,7 @@ from alembic import context
 from src.database import DATABASE_URL
 from src.database import Base
 from src.auth.models import User
-from src.tasks.models import Task
+from src.tasks.models import Task, UserTasks
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

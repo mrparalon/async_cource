@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from src.auth.models import User
 from src.database import engine, get_db
 from src.main import app
-from src.tasks.models import Task
+from src.tasks.models import Task, UserTasks
 
 
 @pytest.fixture()
@@ -53,6 +53,7 @@ def _clear_db(db: Session) -> None:
     meta.reflect(bind=engine)
     db.query(Task).delete()
     db.query(User).delete()
+    db.query(UserTasks).delete()
     db.commit()
 
 

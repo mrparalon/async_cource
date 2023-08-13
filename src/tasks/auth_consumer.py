@@ -1,19 +1,19 @@
+import orjson
 from aiokafka import AIOKafkaConsumer
 from loguru import logger
 from sqlalchemy.orm import Session
-import orjson
 
 from src.database import get_db
 
-from .models import User
+from .models import UserTasks
 
 
 def get_session() -> Session:
     return next(get_db())
 
 
-def handle_user_created(user_event: dict) -> User:
-    db_user = User(
+def handle_user_created(user_event: dict) -> UserTasks:
+    db_user = UserTasks(
         id=user_event["id"],
         username=user_event["username"],
         role=user_event["role"],
@@ -22,18 +22,18 @@ def handle_user_created(user_event: dict) -> User:
     session = get_session()
     session.add(db_user)
     session.commit()
-    logger.info(f"User created: {db_user}")
+    logger.info(f"UserTasks created: {db_user}")
     return db_user
 
 
-def handle_user_role_changed(role_changed_event: dict) -> User:
+def handle_user_role_changed(role_changed_event: dict) -> UserTasks:
     session = get_session()
-    db_user = session.query(User).get(role_changed_event["user_id"])
+    db_user = session.query(UserTasks).get(role_changed_event["user_id"])
     if not db_user:
-        raise ValueError(f"User with id {role_changed_event['user_id']} not found")
+        raise ValueError(f"UserTasks with id {role_changed_event['user_id']} not found")
     db_user.role = role_changed_event["role"]
     session.commit()
-    logger.info(f"User role changed: {db_user.id} from {role_changed_event['old_role']} to {db_user.role}")
+    logger.info(f"UserTasks role changed: {db_user.id} from {role_changed_event['old_role']} to {db_user.role}")
     return db_user
 
 
@@ -52,7 +52,6 @@ async def tasks_auth_worker():
     try:
         # Consume messages
         async for msg in consumer:
-            breakpoint()
             data = orjson.loads(msg.value.decode())
             event_name = data["name"]
             if event_name == "user.created":

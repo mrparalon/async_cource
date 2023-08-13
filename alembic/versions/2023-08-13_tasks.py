@@ -31,7 +31,7 @@ def upgrade() -> None:
     op.create_index(op.f("tasks_users_id_idx"), "tasks_users", ["id"], unique=False)
     op.add_column("tasks", sa.Column("description", sa.String(), nullable=False))
     op.add_column("tasks", sa.Column("status", sa.String(), nullable=False))
-    op.add_column("tasks", sa.Column("user_id", sa.String(), nullable=False))
+    op.add_column("tasks", sa.Column("assigned_to", sa.String(), nullable=False))
     op.add_column("tasks", sa.Column("fee", sa.Integer(), nullable=False))
     op.add_column("tasks", sa.Column("reward", sa.Integer(), nullable=False))
     # ### end Alembic commands ###
