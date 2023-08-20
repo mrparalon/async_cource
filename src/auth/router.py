@@ -1,12 +1,16 @@
 from datetime import datetime, timedelta
 from enum import StrEnum, auto
+from pathlib import Path
 from typing import Annotated, TypeAlias
 from uuid import UUID, uuid4
 
+import jsonschema_rs
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
+from loguru import logger
 from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic.functional_serializers import PlainSerializer
 from sqlalchemy.orm import Session
 
 from src.database import get_db
@@ -17,6 +21,17 @@ from .models import User
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+user_create_schema_v1_path = Path(__file__).parent.parent / "schemas" / "auth" / "user_created" / "1.json"
+user_role_changed_v1_path = Path(__file__).parent.parent / "schemas" / "auth" / "user_role_changed" / "1.json"
+
+with user_create_schema_v1_path.open() as f:
+    user_create_schema_v1 = f.read()
+with user_role_changed_v1_path.open() as f:
+    user_role_changed_v1 = f.read()
+
+
+StrUUID = Annotated[UUID, PlainSerializer(lambda x: str(x), return_type=str, when_used="unless-none")]
 
 
 class Token(BaseModel):
@@ -36,7 +51,7 @@ class UserCreatePayload(BaseModel):
 
 
 class UserSchema(BaseModel):
-    id: UUID
+    id: StrUUID
     username: str
     email: EmailStr
     role: Role
@@ -45,7 +60,7 @@ class UserSchema(BaseModel):
 
 
 class TokenData(BaseModel):
-    user_id: UUID
+    user_id: StrUUID
 
 
 class UserPatchRolePayload(BaseModel):
@@ -95,12 +110,22 @@ async def get_current_user(db: DbDep, token: Annotated[str, Depends(oauth2_schem
     return user
 
 
-async def send_auth_event(name: str, payload: dict):
+async def send_auth_event(name: str, payload: dict, schema: str, event_version: int):
+    """
+    Schema is a json schema
+    """
+    validator = jsonschema_rs.JSONSchema.from_str(schema)
     data = {
-        "name": name,
+        "event_id": str(uuid4()),
+        "event_version": event_version,
+        "event_timestamp": datetime.utcnow().isoformat(timespec="milliseconds") + "Z",
+        "producer": "auth",
+        "event_name": name,
         "payload": payload,
     }
-    await send_event("auth", data)
+    validator.validate(data)
+    logger.info(f"🧑⬆️'auth': {data}")
+    await send_event("users_streaming", data)
 
 
 @router.post("/users/", status_code=status.HTTP_201_CREATED)
@@ -112,10 +137,10 @@ async def create_user(user: UserCreatePayload, db: DbDep) -> UserSchema:
         email=user.email,
     )
     db.add(db_user)
+    user_schema = UserSchema.model_validate(db_user)
+    await send_auth_event("user.created", user_schema.dict(), schema=user_create_schema_v1, event_version=1)
     db.commit()
     db.refresh(db_user)
-    user_schema = UserSchema.model_validate(db_user)
-    await send_auth_event("user.created", user_schema.dict())
 
     return user_schema
 
@@ -130,18 +155,18 @@ async def assign_role_to_user(
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    previous_role = user.role
     user.role = payload.role.value
-    db.commit()
-    db.refresh(user)
     await send_auth_event(
-        "role.chaged",
+        "user.role.chaged",
         {
             "user_id": user.id,
-            "previous_role": previous_role,
             "new_role": user.role,
         },
+        schema=user_role_changed_v1,
+        event_version=1,
     )
+    db.commit()
+    db.refresh(user)
     return UserSchema.model_validate(user)
 
 

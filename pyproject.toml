@@ -21,6 +21,7 @@ loguru = "^0.7.0"
 python-jose = "^3.3.0"
 pydantic = {version = "^2.1.1", extras = ["email"]}
 python-multipart = "^0.0.6"
+jsonschema-rs = "^0.17.1"
 
 
 [tool.poetry.group.dev.dependencies]

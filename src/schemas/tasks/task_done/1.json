@@ -1,0 +1,61 @@
+{
+  "$defs": {
+    "TaskDone": {
+      "properties": {
+        "task_id": {
+          "format": "uuid",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "completed_by": {
+          "format": "uuid",
+          "title": "Completed By",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "completed_by"
+      ],
+      "title": "TaskDone",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_version": {
+      "default": 1,
+      "title": "Event Version",
+      "type": "integer"
+    },
+    "event_timestamp": {
+      "format": "date-time",
+      "title": "Event Timestamp",
+      "type": "string"
+    },
+    "producer": {
+      "title": "Producer",
+      "type": "string"
+    },
+    "event_name": {
+      "default": "task.done",
+      "title": "Event Name",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/TaskDone"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_timestamp",
+    "producer",
+    "payload"
+  ],
+  "title": "TaskDoneEvent",
+  "type": "object"
+}

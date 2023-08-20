@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "TaskSchema": {
+      "properties": {
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "assigned_to": {
+          "format": "uuid",
+          "title": "Assigned To",
+          "type": "string"
+        },
+        "fee": {
+          "title": "Fee",
+          "type": "integer"
+        },
+        "reward": {
+          "title": "Reward",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "status",
+        "assigned_to",
+        "fee",
+        "reward"
+      ],
+      "title": "TaskSchema",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_version": {
+      "default": 1,
+      "title": "Event Version",
+      "type": "integer"
+    },
+    "event_timestamp": {
+      "format": "date-time",
+      "title": "Event Timestamp",
+      "type": "string"
+    },
+    "producer": {
+      "title": "Producer",
+      "type": "string"
+    },
+    "event_name": {
+      "default": "task.created",
+      "title": "Event Name",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/TaskSchema"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_timestamp",
+    "producer",
+    "payload"
+  ],
+  "title": "TaskCreatedEvent",
+  "type": "object"
+}
