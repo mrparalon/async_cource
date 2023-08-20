@@ -1,0 +1,61 @@
+{
+  "$defs": {
+    "TaskAssigned": {
+      "properties": {
+        "task_id": {
+          "format": "uuid",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "assigned_to": {
+          "format": "uuid",
+          "title": "Assigned To",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "assigned_to"
+      ],
+      "title": "TaskAssigned",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_version": {
+      "default": 1,
+      "title": "Event Version",
+      "type": "integer"
+    },
+    "event_timestamp": {
+      "format": "date-time",
+      "title": "Event Timestamp",
+      "type": "string"
+    },
+    "producer": {
+      "title": "Producer",
+      "type": "string"
+    },
+    "event_name": {
+      "default": "task.assigned",
+      "title": "Event Name",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/TaskAssigned"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_timestamp",
+    "producer",
+    "payload"
+  ],
+  "title": "TaskAssignedEvent",
+  "type": "object"
+}

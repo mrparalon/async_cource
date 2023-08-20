@@ -1,7 +1,7 @@
 from time import sleep
-from faker import Faker
 
 import pytest
+from faker import Faker
 from httpx import Client
 
 

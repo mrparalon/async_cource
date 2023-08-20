@@ -1,22 +1,48 @@
-from enum import StrEnum, auto
-from uuid import UUID, uuid4
 import random
+from datetime import datetime
+from enum import StrEnum, auto
+from pathlib import Path
+from typing import Annotated
+from uuid import UUID, uuid4
 
+import jsonschema_rs
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel, ConfigDict
+from pydantic.functional_serializers import PlainSerializer
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
 from src.database import get_db
+from src.events import send_event
 
+from .log import log
 from .models import Task, UserTasks
 
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+StrUUID = Annotated[UUID, PlainSerializer(lambda x: str(x), return_type=str, when_used="unless-none")]
+
+task_created_schema_v1_path = Path(__file__).parent.parent / "schemas" / "tasks" / "task_created" / "1.json"
+task_updated_schema_v1_path = Path(__file__).parent.parent / "schemas" / "tasks" / "task_updated" / "1.json"
+task_added_schema_v1_path = Path(__file__).parent.parent / "schemas" / "tasks" / "task_added" / "1.json"
+task_assigned_schema_v1_path = Path(__file__).parent.parent / "schemas" / "tasks" / "task_assigned" / "1.json"
+task_done_schema_v1_path = Path(__file__).parent.parent / "schemas" / "tasks" / "task_done" / "1.json"
+
+with task_created_schema_v1_path.open() as f:
+    task_created_schema_v1 = f.read()
+with task_updated_schema_v1_path.open() as f:
+    task_updated_schema_v1 = f.read()
+with task_added_schema_v1_path.open() as f:
+    task_added_schema_v1 = f.read()
+with task_assigned_schema_v1_path.open() as f:
+    task_assigned_schema_v1 = f.read()
+with task_done_schema_v1_path.open() as f:
+    task_done_schema_v1 = f.read()
 
 
 class Status(StrEnum):
@@ -29,10 +55,10 @@ class TaskCreatePayload(BaseModel):
 
 
 class TaskSchema(BaseModel):
-    id: UUID
+    id: StrUUID
     description: str
     status: str
-    assigned_to: UUID
+    assigned_to: StrUUID
     fee: int
     reward: int
 
@@ -56,6 +82,42 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
+async def send_task_streaming_event(name: str, payload: dict, schema: str, event_version: int):
+    """
+    Schema is a json schema
+    """
+    validator = jsonschema_rs.JSONSchema.from_str(schema)
+    data = {
+        "event_id": str(uuid4()),
+        "event_version": event_version,
+        "event_timestamp": datetime.utcnow().isoformat(timespec="milliseconds") + "Z",
+        "producer": "tasks",
+        "event_name": name,
+        "payload": payload,
+    }
+    validator.validate(data)
+    log(f"⬆️'tasks_streamin' : {data}")
+    await send_event("tasks_streaming", data)
+
+
+async def send_task_biz_event(name: str, payload: dict, schema: str, event_version: int):
+    """
+    Schema is a json schema
+    """
+    validator = jsonschema_rs.JSONSchema.from_str(schema)
+    data = {
+        "event_id": str(uuid4()),
+        "event_version": event_version,
+        "event_timestamp": datetime.utcnow().isoformat(timespec="milliseconds") + "Z",
+        "producer": "tasks",
+        "event_name": name,
+        "payload": payload,
+    }
+    validator.validate(data)
+    log(f"⬆️'tasks_lifecicle': {data}")
+    await send_event("tasks_lifecicle", data)
+
+
 @router.post("/tasks/", status_code=status.HTTP_201_CREATED)
 async def create_task(
     payload: TaskCreatePayload,
@@ -75,8 +137,29 @@ async def create_task(
         reward=random.randint(20, 40),
     )
     db.add(task)
+    task_schema = TaskSchema.model_validate(task)
+    await send_task_streaming_event(
+        "task.created",
+        task_schema.dict(),
+        schema=task_created_schema_v1,
+        event_version=1,
+    )
+    await send_task_biz_event(
+        "task.added",
+        task_schema.dict(),
+        schema=task_added_schema_v1,
+        event_version=1,
+    )
+    await send_task_biz_event(
+        "task.assigned",
+        {
+            "task_id": str(task.id),
+            "assigned_to": str(assigned_to.id),
+        },
+        schema=task_assigned_schema_v1,
+        event_version=1,
+    )
     db.commit()
-    db.refresh(task)
     return task
 
 
@@ -116,8 +199,20 @@ async def mark_task_as_done(
     if task.assigned_to != str(current_user.id):
         raise HTTPException(status_code=403, detail="You are not allowed to mark this task as done")
     task.status = Status.done.value
+    task_schema = TaskSchema.model_validate(task)
+    await send_task_streaming_event(
+        "task.updated",
+        task_schema.dict(),
+        schema=task_updated_schema_v1,
+        event_version=1,
+    )
+    await send_task_biz_event(
+        "task.done",
+        {"task_id": str(task.id), "completed_by": str(task.assigned_to)},
+        schema=task_done_schema_v1,
+        event_version=1,
+    )
     db.commit()
-    db.refresh(task)
     return task
 
 
@@ -137,7 +232,17 @@ async def reassign_task(
     for task in tasks:
         assigned_to = random.choice(users)
         task.assigned_to = str(assigned_to.id)
+        await send_task_biz_event(
+            "task.assigned",
+            {"task_id": str(task.id), "assigned_to": str(task.assigned_to)},
+            schema=task_assigned_schema_v1,
+            event_version=1,
+        )
+        await send_task_streaming_event(
+            "task.updated",
+            TaskSchema.model_validate(task).dict(),
+            schema=task_updated_schema_v1,
+            event_version=1,
+        )
     db.commit()
-    for task in tasks:
-        db.refresh(task)
     return tasks

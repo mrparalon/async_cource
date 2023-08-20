@@ -1,6 +1,5 @@
 from collections.abc import Callable
 from unittest.mock import ANY, AsyncMock
-from uuid import UUID
 
 import pytest
 from dirty_equals import IsStr
@@ -26,7 +25,6 @@ def test__create_user(client: Client, role: str, username: str, email: str, inse
         json={"username": username, "email": email, "role": role},
     )
     assert response.status_code == 201
-    # insert_assert(response.json())
     assert response.json() == {
         "id": ANY,
         "username": username,
@@ -35,11 +33,15 @@ def test__create_user(client: Client, role: str, username: str, email: str, inse
     }
     mock_send_event.assert_called_once()
     mock_send_event.assert_called_with(
-        "auth",
+        "users_streaming",
         {
-            "name": "user.created",
+            "event_id": ANY,
+            "event_version": 1,
+            "event_timestamp": ANY,
+            "producer": "auth",
+            "event_name": "user.created",
             "payload": {
-                "id": UUID(response.json()["id"]),
+                "id": response.json()["id"],
                 "username": username,
                 "email": email,
                 "role": Role(role),
@@ -58,7 +60,6 @@ def test__get_token_with_any_password(client: Client, insert_assert):
     user_id = response.json()["id"]
     response = client.post("/token/", data={"username": username, "password": "any"})
     assert response.status_code == 200
-    # insert_assert(response.json())
     assert response.json() == {
         "access_token": IsStr(),
         "token_type": "bearer",
@@ -97,12 +98,15 @@ def test__change_user_role(
     }
     mock_send_event.assert_called_once()
     mock_send_event.assert_called_with(
-        "auth",
+        "users_streaming",
         {
-            "name": "role.chaged",
+            "event_id": ANY,
+            "event_version": 1,
+            "event_timestamp": ANY,
+            "producer": "auth",
+            "event_name": "user.role.chaged",
             "payload": {
                 "user_id": user.id,
-                "previous_role": previous_role.value,
                 "new_role": new_role.value,
             },
         },

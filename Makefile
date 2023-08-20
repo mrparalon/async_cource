@@ -32,3 +32,6 @@ test:
 
 test_e2e:
 	pytest -s tests/e2e/
+
+end_day:
+	python end_day.py

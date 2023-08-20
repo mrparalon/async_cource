@@ -1,0 +1,67 @@
+{
+  "$defs": {
+    "Role": {
+      "enum": [
+        "user",
+        "admin"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "RoleChanged": {
+      "properties": {
+        "user_id": {
+          "format": "uuid",
+          "title": "User Id",
+          "type": "string"
+        },
+        "new_role": {
+          "$ref": "#/$defs/Role"
+        }
+      },
+      "required": [
+        "user_id",
+        "new_role"
+      ],
+      "title": "RoleChanged",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_version": {
+      "default": 1,
+      "title": "Event Version",
+      "type": "integer"
+    },
+    "event_timestamp": {
+      "format": "date-time",
+      "title": "Event Timestamp",
+      "type": "string"
+    },
+    "producer": {
+      "title": "Producer",
+      "type": "string"
+    },
+    "event_name": {
+      "default": "user.role.changed",
+      "title": "Event Name",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/RoleChanged"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_timestamp",
+    "producer",
+    "payload"
+  ],
+  "title": "RoleChangedEvent",
+  "type": "object"
+}

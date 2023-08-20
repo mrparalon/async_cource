@@ -1,8 +1,8 @@
 from uuid import uuid4
-from fastapi.testclient import TestClient
 
 import pytest
 from faker import Faker
+from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from src.auth.models import User
@@ -41,4 +41,4 @@ def test__create_task(user_client: TestClient, insert_assert, user_for_task: Use
         json={"description": "task 1"},
     )
     assert response.status_code == 201
-    task_data = response.json()
+    response.json()

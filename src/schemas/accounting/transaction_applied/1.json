@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "TransactionSchema": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "integer"
+        },
+        "user_id": {
+          "format": "uuid",
+          "title": "User Id",
+          "type": "string"
+        },
+        "amount": {
+          "title": "Amount",
+          "type": "integer"
+        },
+        "transaction_type": {
+          "title": "Transaction Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "user_id",
+        "amount",
+        "transaction_type"
+      ],
+      "title": "TransactionSchema",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_version": {
+      "default": 1,
+      "title": "Event Version",
+      "type": "integer"
+    },
+    "event_timestamp": {
+      "format": "date-time",
+      "title": "Event Timestamp",
+      "type": "string"
+    },
+    "producer": {
+      "title": "Producer",
+      "type": "string"
+    },
+    "event_name": {
+      "default": "transaction.applied",
+      "title": "Event Name",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/TransactionSchema"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_timestamp",
+    "producer",
+    "payload"
+  ],
+  "title": "TransactionCreatedEvent",
+  "type": "object"
+}

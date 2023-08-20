@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from src.database import get_db
 
 from .log import log
-from .models import UserTasks
+from .models import UserAccounting
 
 user_create_schema_v1_path = Path(__file__).parent.parent / "schemas" / "auth" / "user_created" / "1.json"
 user_role_changed_v1_path = Path(__file__).parent.parent / "schemas" / "auth" / "user_role_changed" / "1.json"
@@ -25,40 +25,41 @@ def get_session() -> Session:
 
 
 def log_consumer(message: str):
-    log(f"⬇️  {message}")
+    log(f"⬇️{message}")
 
 
-def handle_user_created(user_event: dict) -> UserTasks:
-    db_user = UserTasks(
+def handle_user_created(user_event: dict) -> UserAccounting:
+    db_user = UserAccounting(
         id=user_event["id"],
         username=user_event["username"],
         role=user_event["role"],
         email=user_event["email"],
+        balance=0,
     )
     session = get_session()
     session.add(db_user)
     session.commit()
-    log_consumer(f"UserTasks created: {db_user}")
+    log_consumer(f"UserAccounting created: {db_user}")
     return db_user
 
 
-def handle_user_role_changed(role_changed_event: dict) -> UserTasks:
+def handle_user_role_changed(role_changed_event: dict) -> UserAccounting:
     session = get_session()
-    db_user = session.query(UserTasks).get(role_changed_event["user_id"])
+    db_user = session.query(UserAccounting).get(role_changed_event["user_id"])
     if not db_user:
-        raise ValueError(f"UserTasks with id {role_changed_event['user_id']} not found")
+        raise ValueError(f"UserAccounting with id {role_changed_event['user_id']} not found")
     db_user.role = role_changed_event["role"]
     session.commit()
-    log_consumer(f"UserTasks role changed: {db_user.id} from {role_changed_event['old_role']} to {db_user.role}")
+    log_consumer(f"UserAccounting role changed: {db_user.id} from {role_changed_event['old_role']} to {db_user.role}")
     return db_user
 
 
 @logger.catch
-async def tasks_auth_worker():
+async def accounting_auth_worker():
     consumer = AIOKafkaConsumer(
         "users_streaming",
         bootstrap_servers="localhost:9092",
-        group_id="tasks_auth",
+        group_id="accounting_auth",
         enable_auto_commit=True,  # Is True by default anyway
         auto_commit_interval_ms=1000,  # Autocommit every second
         auto_offset_reset="earliest",  # If committed offset not found, start
